@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import Snackbars from '../../components/SnakBar';
 import { useLoginMutation } from './authApiSlice';
 import { setCredentials } from './authSlice';
 
@@ -35,16 +36,39 @@ const theme = createTheme();
 
 
 export default function Login() {
-    const [login, { isLoading }] = useLoginMutation()
+    const [login, { isLoading,error:loginErr ,isSuccess}] = useLoginMutation()
 const [errMsg, setErrMsg] = React.useState('')
 const dispatch = useDispatch()
-const navigate = useNavigate()
+const navigate = useNavigate();
+const[openSnakbar,setOpenSnakbar]=React.useState(false)
+const[snakbarMsg,setSnakbarMsg]=React.useState("")
+const[snakbarType,setSnakbarType]=React.useState('success')
 
 const userRef = React.useRef()
 const errRef = React.useRef()
 React.useEffect(() => {
     userRef.current.focus()
 }, [])
+
+React.useEffect(() => {
+    if(loginErr && !isLoading){
+      setSnakbarType('warning')
+      setOpenSnakbar(true)
+      setSnakbarMsg(loginErr)
+    }
+  
+}, [loginErr,isLoading,isSuccess])
+React.useEffect(() => {
+  
+    if(isSuccess && !isLoading){
+      setSnakbarType('success')
+      setOpenSnakbar(true)
+      setSnakbarMsg({data:'Login success'})
+      setTimeout(() => {
+        navigate('/dashboard')
+      },1000)
+    }
+}, [isLoading,isSuccess])
   const handleSubmit = async(event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -52,7 +76,7 @@ React.useEffect(() => {
         const userData = await login({ user:data.get('username'), pwd :data.get('password')}).unwrap()
         dispatch(setCredentials({ ...userData, user:data.get('username') }))
      
-        navigate('/dashboard')
+      
     } catch (err) {
         if (!err?.originalStatus) {
             // isLoading: true until timeout occurs
@@ -71,6 +95,8 @@ React.useEffect(() => {
 
   
   };
+
+
 
   return (
     <ThemeProvider theme={theme}>
@@ -138,6 +164,7 @@ React.useEffect(() => {
                 fullWidth
                 variant="contained"
                 sx={{ mt: 3, mb: 2 }}
+                disabled={isLoading}
               >
                 Sign In
               </Button>
@@ -158,6 +185,8 @@ React.useEffect(() => {
           </Box>
         </Grid>
       </Grid>
+
+      <Snackbars snakbarType={snakbarType} snakbarMsg={snakbarMsg} openSnakbar={openSnakbar} setOpenSnakbar={setOpenSnakbar}/>
     </ThemeProvider>
   );
 }
